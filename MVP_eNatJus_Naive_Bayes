@@ -1,0 +1,209 @@
+## 1. Importar bibliotecas
+Usaremos `pandas` para organizar os exemplos e `scikit-learn` para vetorização, treinamento e avaliação.
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, classification_report, ConfusionMatrixDisplay
+
+print("Bibliotecas carregadas com sucesso.")
+
+----------------------------------------------------------------------------------------------------------------
+
+## 2. Montar a base de dados fictícia
+80 textos criados apenas para a demonstração, 20 por categoria.
+Em um projeto real, a base precisaria ser revisada por especialistas, anonimizada, ampliada e validada antes de qualquer uso.
+
+dados = [
+    {"texto": 'O requerente solicita o fornecimento do medicamento prescrito pelo médico.', "categoria": 'medicamento'},
+    {"texto": 'Pedido judicial para disponibilização de fármaco de uso contínuo.', "categoria": 'medicamento'},
+    {"texto": 'A parte autora requer medicamento de alto custo não fornecido regularmente.', "categoria": 'medicamento'},
+    {"texto": 'Solicita-se a entrega do remédio indicado na receita médica.', "categoria": 'medicamento'},
+    {"texto": 'O paciente pede o fornecimento de comprimidos para controle da doença.', "categoria": 'medicamento'},
+    {"texto": 'A ação requer acesso a medicamento registrado na Anvisa.', "categoria": 'medicamento'},
+    {"texto": 'A demanda trata da falta de medicamento na farmácia pública.', "categoria": 'medicamento'},
+    {"texto": 'O autor solicita insulina e outros medicamentos para uso diário.', "categoria": 'medicamento'},
+    {"texto": 'Pedido de fornecimento de medicamento oncológico conforme prescrição.', "categoria": 'medicamento'},
+    {"texto": 'A petição pede um fármaco específico para continuidade da terapia.', "categoria": 'medicamento'},
+    {"texto": 'Requer-se que o município disponibilize o remédio receitado.', "categoria": 'medicamento'},
+    {"texto": 'O processo discute a dispensação de medicamento pelo SUS.', "categoria": 'medicamento'},
+    {"texto": 'A família solicita a compra de medicamento que não está disponível.', "categoria": 'medicamento'},
+    {"texto": 'O pedido busca garantir o acesso ao princípio ativo indicado pelo especialista.', "categoria": 'medicamento'},
+    {"texto": 'A parte requer a renovação do fornecimento de medicamento de uso prolongado.', "categoria": 'medicamento'},
+    {"texto": 'Solicita-se medicamento imunobiológico para tratamento de doença crônica.', "categoria": 'medicamento'},
+    {"texto": 'O paciente pede o fornecimento de cápsulas prescritas em relatório clínico.', "categoria": 'medicamento'},
+    {"texto": 'A demanda judicial busca obter o fármaco prescrito e indisponível na rede pública.', "categoria": 'medicamento'},
+    {"texto": 'A petição solicita a dispensação de antibiótico conforme receita.', "categoria": 'medicamento'},
+    {"texto": 'O requerente pede que o Estado forneça os medicamentos descritos na prescrição.', "categoria": 'medicamento'},
+    {"texto": 'O requerente solicita a realização de cirurgia ortopédica.', "categoria": 'cirurgia'},
+    {"texto": 'Pedido judicial para agendamento de procedimento cirúrgico urgente.', "categoria": 'cirurgia'},
+    {"texto": 'A parte autora requer cirurgia para correção de hérnia.', "categoria": 'cirurgia'},
+    {"texto": 'O paciente aguarda intervenção cirúrgica pelo sistema público.', "categoria": 'cirurgia'},
+    {"texto": 'A demanda trata da realização de cirurgia cardíaca.', "categoria": 'cirurgia'},
+    {"texto": 'Solicita-se autorização para procedimento cirúrgico indicado pelo especialista.', "categoria": 'cirurgia'},
+    {"texto": 'O processo pede cirurgia de catarata na rede pública.', "categoria": 'cirurgia'},
+    {"texto": 'O autor busca reduzir a fila para uma operação de coluna.', "categoria": 'cirurgia'},
+    {"texto": 'A petição requer cirurgia bariátrica após avaliação médica.', "categoria": 'cirurgia'},
+    {"texto": 'O paciente precisa de cirurgia para retirada de tumor.', "categoria": 'cirurgia'},
+    {"texto": 'A família pede a realização de transplante conforme indicação clínica.', "categoria": 'cirurgia'},
+    {"texto": 'O pedido é para uma intervenção cirúrgica reparadora.', "categoria": 'cirurgia'},
+    {"texto": 'A ação solicita cirurgia vascular em hospital conveniado.', "categoria": 'cirurgia'},
+    {"texto": 'O requerente pede operação para tratamento de lesão no joelho.', "categoria": 'cirurgia'},
+    {"texto": 'A demanda busca autorização de cirurgia neurológica.', "categoria": 'cirurgia'},
+    {"texto": 'O paciente aguarda procedimento cirúrgico eletivo há vários meses.', "categoria": 'cirurgia'},
+    {"texto": 'Solicita-se cirurgia para correção de catarata bilateral.', "categoria": 'cirurgia'},
+    {"texto": 'A petição pede que o ente público providencie a operação recomendada.', "categoria": 'cirurgia'},
+    {"texto": 'O pedido judicial refere-se a cirurgia de prótese de quadril.', "categoria": 'cirurgia'},
+    {"texto": 'O autor requer internação para realização de procedimento cirúrgico.', "categoria": 'cirurgia'},
+    {"texto": 'O requerente solicita a realização de exame de ressonância magnética.', "categoria": 'exame'},
+    {"texto": 'Pedido para agendamento de tomografia computadorizada.', "categoria": 'exame'},
+    {"texto": 'A parte autora requer exame laboratorial específico.', "categoria": 'exame'},
+    {"texto": 'O paciente aguarda ultrassonografia pela rede pública.', "categoria": 'exame'},
+    {"texto": 'A demanda trata do acesso a exame de colonoscopia.', "categoria": 'exame'},
+    {"texto": 'Solicita-se exame de sangue para investigação diagnóstica.', "categoria": 'exame'},
+    {"texto": 'O processo pede uma mamografia que ainda não foi agendada.', "categoria": 'exame'},
+    {"texto": 'O autor requer ecocardiograma solicitado pelo cardiologista.', "categoria": 'exame'},
+    {"texto": 'A petição busca garantir o exame de biópsia.', "categoria": 'exame'},
+    {"texto": 'O paciente precisa realizar uma endoscopia digestiva.', "categoria": 'exame'},
+    {"texto": 'A família solicita exame de imagem para esclarecer o diagnóstico.', "categoria": 'exame'},
+    {"texto": 'O pedido judicial trata da realização de eletroencefalograma.', "categoria": 'exame'},
+    {"texto": 'O requerente pede teste genético para investigação clínica.', "categoria": 'exame'},
+    {"texto": 'A demanda é sobre exame de densitometria óssea.', "categoria": 'exame'},
+    {"texto": 'O paciente necessita de cintilografia indicada em relatório.', "categoria": 'exame'},
+    {"texto": 'Solicita-se teste diagnóstico que não está disponível no município.', "categoria": 'exame'},
+    {"texto": 'A petição requer exame de angiografia para avaliar os vasos.', "categoria": 'exame'},
+    {"texto": 'O autor pede coleta e análise laboratorial de amostras.', "categoria": 'exame'},
+    {"texto": 'O processo solicita exame de PET-CT para avaliação médica.', "categoria": 'exame'},
+    {"texto": 'A ação busca agendamento de exame oftalmológico especializado.', "categoria": 'exame'},
+    {"texto": 'O requerente solicita sessões de fisioterapia para reabilitação.', "categoria": 'tratamento'},
+    {"texto": 'Pedido judicial para iniciar radioterapia conforme plano terapêutico.', "categoria": 'tratamento'},
+    {"texto": 'A parte autora requer acompanhamento psicológico continuado.', "categoria": 'tratamento'},
+    {"texto": 'O paciente necessita de tratamento fonoaudiológico.', "categoria": 'tratamento'},
+    {"texto": 'A demanda trata de sessões de hemodiálise.', "categoria": 'tratamento'},
+    {"texto": 'Solicita-se terapia ocupacional para recuperar a autonomia funcional.', "categoria": 'tratamento'},
+    {"texto": 'O processo pede tratamento multidisciplinar para reabilitação.', "categoria": 'tratamento'},
+    {"texto": 'O autor requer acesso a quimioterapia em serviço especializado.', "categoria": 'tratamento'},
+    {"texto": 'A família solicita atendimento domiciliar de reabilitação.', "categoria": 'tratamento'},
+    {"texto": 'O paciente aguarda tratamento especializado para sua condição.', "categoria": 'tratamento'},
+    {"texto": 'A petição pede sessões de psicoterapia pela rede pública.', "categoria": 'tratamento'},
+    {"texto": 'O requerente solicita tratamento odontológico especializado.', "categoria": 'tratamento'},
+    {"texto": 'A demanda judicial envolve programa de reabilitação física.', "categoria": 'tratamento'},
+    {"texto": 'O paciente necessita de terapia renal substitutiva continuada.', "categoria": 'tratamento'},
+    {"texto": 'Solicita-se tratamento nutricional acompanhado por equipe profissional.', "categoria": 'tratamento'},
+    {"texto": 'O pedido é para iniciar tratamento fisioterapêutico pós-operatório.', "categoria": 'tratamento'},
+    {"texto": 'A parte autora requer acompanhamento terapêutico regular.', "categoria": 'tratamento'},
+    {"texto": 'O processo solicita tratamento de radioterapia em hospital de referência.', "categoria": 'tratamento'},
+    {"texto": 'O autor pede atendimento de terapia ocupacional na rede pública.', "categoria": 'tratamento'},
+    {"texto": 'A demanda busca garantir tratamento reabilitador após acidente.', "categoria": 'tratamento'},
+
+]
+
+df = pd.DataFrame(dados)
+
+--------------------------------------------------------------------------------------------------------------------
+
+display(df.head(10))
+print("\nQuantidade de exemplos por categoria:")
+print(df["categoria"].value_counts())
+print(f"\nTotal de linhas: {len(df)}")
+
+---------------------------------------------------------------------------------------------------------------------
+
+## 3. Treinar o algoritmo
+O `TfidfVectorizer` representa o texto com sequências de 3 a 8 caracteres e atribui pesos TF-IDF.
+Essa representação ajuda a reconhecer variações de palavras. O `MultinomialNB` aprende padrões associados a cada categoria.
+
+# Separar os textos (X) das categorias corretas (y)
+X = df["texto"]
+y = df["categoria"]
+
+X_treino, X_teste, y_treino, y_teste = train_test_split(
+    X,
+    y,
+    test_size=0.25,
+    random_state=42,
+    stratify=y
+)
+
+# O TF-IDF usa sequências de 3 a 8 caracteres para reconhecer palavras e variações.
+# O MultinomialNB aprende padrões dessas características por categoria.
+modelo = Pipeline([
+    ("vetorizador", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 8), strip_accents="unicode", sublinear_tf=True)),
+    ("classificador", MultinomialNB())
+])
+
+modelo.fit(X_treino, y_treino)
+predicoes = modelo.predict(X_teste)
+
+print(f"Total de exemplos: {len(df)}")
+print(f"Exemplos para treino: {len(X_treino)}")
+print(f"Exemplos para teste: {len(X_teste)}")
+print(f"Acurácia no conjunto de teste: {accuracy_score(y_teste, predicoes):.2%}")
+print("\nRelatório por categoria:")
+print(classification_report(y_teste, predicoes, zero_division=0))
+
+--------------------------------------------------------------------------------------------------------------------------
+
+## 4. Visualizar os resultados
+A matriz de confusão mostra quantos textos de cada categoria foram classificados corretamente e quais foram confundidos.
+Como a base é pequena e sintética, seguindo a métrica inventada para o teste.
+
+# Matriz de confusão: mostra os acertos e as categorias confundidas pelo modelo.
+ordem = ["medicamento", "cirurgia", "exame", "tratamento"]
+ConfusionMatrixDisplay.from_predictions(
+    y_teste,
+    predicoes,
+    labels=ordem,
+    display_labels=ordem,
+    xticks_rotation=25,
+    cmap="Blues"
+)
+plt.title("Matriz de confusão — conjunto de teste")
+plt.tight_layout()
+plt.show()
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+## 5. Classificar um novo texto
+Editando a variável `texto_exemplo` na célula a seguir.
+Use apenas texto fictício ou devidamente anonimizado.
+A categoria prevista deve ser tratada como sugestão de triagem, com revisão humana.
+
+def classificar_documento(texto):
+    """Classifica um texto fictício/anonimizado em uma das quatro categorias."""
+    if not isinstance(texto, str) or not texto.strip():
+        raise ValueError("Digite um texto não vazio para classificar.")
+
+    categoria = modelo.predict([texto])[0]
+    probabilidades = modelo.predict_proba([texto])[0]
+    classes = modelo.named_steps["classificador"].classes_
+    indice = list(classes).index(categoria)
+    percentual_estimado = probabilidades[indice] * 100
+
+    print(f"Categoria prevista: {categoria.upper()}")
+    print(f"Probabilidade estimada pelo modelo: {percentual_estimado:.1f}%")
+    print("\nProbabilidades estimadas por categoria:")
+    for classe, prob in sorted(zip(classes, probabilidades), key=lambda item: item[1], reverse=True):
+        print(f"- {classe}: {prob:.1%}")
+    print("\nAtenção: a probabilidade é uma estimativa do modelo, não uma garantia de acerto.")
+
+# Edite o texto de exemplo para testar outras solicitações fictícias.
+texto_exemplo = "O requerente solicita o fornecimento do medicamento prescrito, indisponível na farmácia pública."
+classificar_documento(texto_exemplo)
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+## 6. Conclusão do MVP
+O protótipo demonstra o fluxo básico de classificação de textos: exemplos rotulados → vetorização → treinamento → avaliação → previsão.
+Como próximos passos, seria necessário testar com uma base maior e representativa,
+medir erros por categoria, tratar ambiguidades, documentar limitações e manter supervisão humana.
+
+### Referências
+- CONSELHO NACIONAL DE JUSTIÇA. **Sistema e-NatJus**. https://www.cnj.jus.br/programas-e-acoes/forum-da-saude-3/e-natjus/
+- CONSELHO NACIONAL DE JUSTIÇA. **Resolução nº 479, de 11 de novembro de 2022**. https://atos.cnj.jus.br/atos/detalhar/4818
+- SCIKIT-LEARN DEVELOPERS. **MultinomialNB**. https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html
+- SCIKIT-LEARN DEVELOPERS. **TfidfVectorizer**. https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
+- SILVA, Tiago Santos et al. **Mecanismos de Inteligência Artificial no Direito à Saúde: perspectivas e desafios na utilização do e-NatJus como apoio à decisão judicial**. Revista Gestão e Conhecimento Contemporâneo – REGECO, Brasília, v. 4, n. 1, 2026. (Texto fornecido para orientar o projeto.)
