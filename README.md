@@ -168,10 +168,7 @@ Cada classificação retorna um JSON com categoria, pontuações, margem, pedido
 
 ## 👥 Autores
 
-- Nome do(a) aluno(a) — [@usuario](https://github.com/usuario)
+- Higor Vieira
+- Yuri Lima
 
-Trabalho desenvolvido para a disciplina de **[nome da disciplina]**, **[nome da instituição]**, 2026.
 
-## 📄 Licença
-
-Projeto acadêmico. Defina a licença desejada (ex.: [MIT](https://choosealicense.com/licenses/mit/)).
